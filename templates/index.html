@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+
+{% block head %}
+            <link rel="stylesheet" href={{url_for('static', filename="css/login.css")}}>
+{% endblock %}
+
+{% block body %}
+{% with messages = get_flashed_messages() %}
+    {% if messages %}
+        {% for message in messages %}
+        <div class="alert alert-danger d-flex justify-content-center align-items-center" role="alert">
+            {{ message }}
+        </div>
+        {% endfor %}
+    {% endif %}
+{% endwith %}
+<div class="d-flex justify-content-center d-flex align-items-center vh-100" ">
+    <div>
+        <h1 class="mr-5">{% if reg %}Register{% else %}Login{% endif %}</h1>
+    </div>
+    {% if reg %}
+    <form method="post" action={{url_for('register')}}>
+    {% else %}
+    <form method="post" action={{url_for('index')}}>
+    {% endif %}
+        {% if reg %}
+        <div class="form-group">
+            <label for="username">Username</label>
+            <input type="text" name="username" class="form-control" id="username" required>
+        </div>
+        {% endif %}
+        <div class="form-group">
+            <label for="email">Email address</label>
+            <input type="email" name="email" class="form-control" id="email" aria-describedby="emailHelp" required>
+            <small id="emailHelp" class="form-text text-muted">We'll never share your email with anyone else.</small>
+        </div>
+        <div class="form-group">
+            <label for="pass">Password</label>
+            <input type="password" name="password" id="pass" class="form-control" aria-describedby="passwordHelpInline" required>
+            <small id="passwordHelpInline" class="text-muted">
+                Must be 8-20 characters long.
+            </small>
+        </div>
+        {% if not reg %}
+        <div class="form-group">
+            <a href={{url_for('register')}} >Create a user</a>
+        </div>
+        {% endif %}
+        <button type="submit" class="btn btn-primary">Submit</button>
+    </form>
+</div>
+{% endblock %}
