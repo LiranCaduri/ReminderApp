@@ -1,39 +1,28 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, session
-from flask_sqlalchemy import SQLAlchemy
-
+from models import *
+from sqlalchemy.exc import OperationalError
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///ReminderAppDataBase.sqlite3'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.secret_key = 'liran_is_the_boss'
-db = SQLAlchemy(app)
-
-
-class users(db.Model):
-    # __tablename__ = "users"
-    id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(80), unique=True, nullable=False)
-    email = db.Column(db.String(120), unique=True, nullable=False)
-    password = db.Column(db.String(20), nullable=False)
-
-    def __init__(self, username, email, password):
-        self.username = username
-        self.email = email
-        self.password = password
-
-    def __repr__(self):
-        return '<User %r>' % self.username
+db.init_app(app=app)
 
 
 @app.route('/', methods=['POST', 'GET'])
 def index():
     if request.method == 'POST':
         email = request.form['email']
-        usr = users.query.filter_by(email=email).first()
-        if usr and usr.password == request.form['password']:
-            return redirect(url_for('home'))
+        try:
+            usr = User.query.filter_by(email=email).first()
+            if usr and usr.password == request.form['password']:
+                session['user_id'] = usr.id
+                return redirect(url_for('home'))
+        except OperationalError:
+            db.create_all()
+            flash("If you dont have an account, you should create one..")
         else:
-            flash("Couldn't login worng email and password", category='info')
+            flash("Couldn't login worng email and password")
     return render_template( 'index.html', reg=False)
 
 
@@ -41,7 +30,7 @@ def index():
 def register():
     if request.method == 'POST':
         name, email, password = request.form.values()
-        usr = users(username=name, email=email, password=password)
+        usr = User(username=name, email=email, password=password)
         db.session.add(usr)
         db.session.commit()
         return redirect(url_for('index'))
@@ -51,12 +40,35 @@ def register():
 
 @app.route('/home')
 def home():
-    print(users.query.all())
-    return render_template('index.html', reg=False)
+    if 'user_id' in session.keys():
+        user = User.query.filter_by(id=session['user_id']).first()
+        return render_template('home.html', user=user)
+    else:
+        return '401'
 
+
+@app.route('/todos', methods=['GET', 'POST'])
+def todos():
+    if 'user_id' in session.keys():
+        user = User.query.filter_by(id=session['user_id']).first()
+        return render_template('list.html', data=user.todos)
+    else:
+        return '401'
+
+        
+@app.route('/lists', methods=['GET', 'POST'])
+def lists():
+    return render_template('home.html')
+
+
+@app.route('/logout')
+def logout():
+    session.pop('user_id', None)
+    flash('You were logged out')
+    return redirect(url_for('index', reg=False))
 
 if __name__ == '__main__':
-    db.create_all()
+    db.create_all(app=app)
     app.run( debug=True )
     
 
