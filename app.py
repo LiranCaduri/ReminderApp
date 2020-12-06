@@ -51,9 +51,57 @@ def home():
 def todos():
     if 'user_id' in session.keys():
         user = User.query.filter_by(id=session['user_id']).first()
-        return render_template('list.html', data=user.todos)
+        if request.method == 'POST':
+            title, desc = request.form.values()
+            new_todo = Todos(title=title, description=desc, owner=user)
+            db.session.add(new_todo)
+            db.session.commit()
+        print('p', user.todos)
+        return render_template('todos.html', data=user.todos)
     else:
         return '401'
+
+@app.route('/handle/<item>/<func>')
+def handle_crud(item, func):
+    actions = {
+        'del': delete,
+        'check': check,
+        'edit': update,
+    }
+
+    resp = None
+    if 'user_id' in session.keys():
+        if func in actions.keys():
+            resp = actions[func](item)
+    
+    if resp:
+        return redirect(url_for('todos'))
+    elif not resp:
+        flash("Could'nt deploy the action")
+        return redirect(url_for('todos'))
+    else:
+        flash('Oops, something went wrong..')
+        return redirect(url_for('logout'))
+
+
+def delete(item):
+    todo = Todos.query.filter_by(id=item).delete()
+    print(Todos.query.all())
+    print(User.query.filter_by(id=session['user_id']).first().todos)
+    return True
+
+
+def check(item):
+    todo = Todos.query.filter_by(id=item).first()
+    todo.completed = not todo.completed
+    db.session.commit()
+    return True
+
+
+def update(item):
+    # mark - make it work
+    Todos.query.filter_by(id=item).first()
+    return True
 
         
 @app.route('/lists', methods=['GET', 'POST'])
@@ -70,5 +118,8 @@ def logout():
 if __name__ == '__main__':
     db.create_all(app=app)
     app.run( debug=True )
+    # test = User('test', 'test@test.com', 'test')
+    # db.session.add(test)
+    # db.session.commit()
     
 
