@@ -56,7 +56,6 @@ def todos():
             new_todo = Todos(title=title, description=desc, owner=user)
             db.session.add(new_todo)
             db.session.commit()
-        print('p', user.todos)
         return render_template('todos.html', data=user.todos)
     else:
         return '401'
@@ -85,9 +84,15 @@ def handle_crud(item, func):
 
 
 def delete(item):
+    user = User.query.filter_by(id=session['user_id']).first()
+    for todo in user.todos:
+        if todo.id == int(item):
+            user.todos.remove(todo)
+            break
+
     todo = Todos.query.filter_by(id=item).delete()
-    print(Todos.query.all())
-    print(User.query.filter_by(id=session['user_id']).first().todos)
+    db.session.commit()
+
     return True
 
 
