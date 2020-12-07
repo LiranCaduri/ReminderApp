@@ -2,17 +2,27 @@
 
 {% block below %}
 <div class="my-3 p-3 rounded bg-light shadow-sm">
+    {% if editmode is not none and editmode is false %}
     <h6 class="border-bottom border-gray pb-2 mb-0">Add a Todo</h6>
     <form method="post" class="my-4" action={{url_for('todos')}}>
+    {% else %}
+    <h6 class="border-bottom border-gray pb-2 mb-0">Edit a Todo</h6>
+    <form method="post" class="my-4" action={{url_for('update', item=item)}}>
+    {% endif %}
         <div class="form-group">
             <label for="title">Title</label>
-            <input type="text" name="title" class="form-control" required>
+            <input type="text" name="title" class="form-control" value='{{ session['title'] if editmode else '' }}' required>
         </div>
         <div class="form-group">
             <label for="desc">Description</label>
-            <input type="text" name="desc" class="form-control" required>
+            <input type="text" name="desc" class="form-control" value='{{ session['desc'] if editmode else '' }}' required>
         </div>
+        {% if editmode is not none and editmode is false %}
         <button type="submit" class="btn btn-primary">Add</button>
+        {% else %}
+        <button type="submit" class="btn btn-primary">Done</button>
+        <a type="cancel" class="btn btn-dark" href={{url_for('todos')}}>Cancel</a>
+        {% endif %}
     </form>
 </div>
 
@@ -35,6 +45,8 @@
         <div class="media-body pb-3 mb-0 small lh-125 border-bottom border-gray">
             <strong class="d-block text-gray-dark">{{item.title}}</strong>
             <p>{{item.description}}</p>
+
+            {% if editmode is not none and editmode is false %}
             <a class="btn btn-secondary btn-sm" href={{url_for('handle_crud', func='check', item=item.id)}}>
             {% if item.completed %}
                 Not Done
@@ -48,6 +60,7 @@
             <a class="btn btn-danger btn-sm" href={{url_for('handle_crud', func='del', item=item.id )}}>
                 Delete
             </a>
+            {% endif %}
         </div>
     </div>
     {% endfor %}

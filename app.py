@@ -48,7 +48,8 @@ def home():
 
 
 @app.route('/todos', methods=['GET', 'POST'])
-def todos():
+@app.route('/todos/<editmode>/<item>', methods=['GET', 'POST'])
+def todos(editmode=False, item=None):
     if 'user_id' in session.keys():
         user = User.query.filter_by(id=session['user_id']).first()
         if request.method == 'POST':
@@ -56,7 +57,10 @@ def todos():
             new_todo = Todos(title=title, description=desc, owner=user)
             db.session.add(new_todo)
             db.session.commit()
-        return render_template('todos.html', data=user.todos)
+        if editmode is False:
+            session.pop('title', None)
+            session.pop('desc', None)
+        return render_template('todos.html', data=user.todos, editmode=editmode, item=item)
     else:
         return '401'
 
@@ -73,7 +77,9 @@ def handle_crud(item, func):
         if func in actions.keys():
             resp = actions[func](item)
     
-    if resp:
+    if resp is not None and func == 'edit':
+        return redirect(url_for('todos', editmode=resp, item=item))
+    elif resp:
         return redirect(url_for('todos'))
     elif not resp:
         flash("Could'nt deploy the action")
@@ -103,12 +109,24 @@ def check(item):
     return True
 
 
+@app.route('/edit/<item>', methods=['POST'])
 def update(item):
     # mark - make it work
-    Todos.query.filter_by(id=item).first()
+    if request.method == 'POST':
+        todo = Todos.query.filter_by(id=item).first()
+        todo.title = request.form['title']
+        todo.description = request.form['desc']
+        db.session.commit()
+        session.pop('title', None)
+        session.pop('desc', None)
+        return redirect(url_for('todos'))
+    else:
+        todo = Todos.query.filter_by(id=item).first()
+        session['title'] = todo.title
+        session['desc'] = todo.description
     return True
-
         
+
 @app.route('/lists', methods=['GET', 'POST'])
 def lists():
     return render_template('home.html')
@@ -120,11 +138,9 @@ def logout():
     flash('You were logged out')
     return redirect(url_for('index', reg=False))
 
+
 if __name__ == '__main__':
     db.create_all(app=app)
     app.run( debug=True )
-    # test = User('test', 'test@test.com', 'test')
-    # db.session.add(test)
-    # db.session.commit()
-    
+
 
