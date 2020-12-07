@@ -42,7 +42,8 @@ def register():
 def home():
     if 'user_id' in session.keys():
         user = User.query.filter_by(id=session['user_id']).first()
-        return render_template('home.html', user=user)
+        user_todos_top_5 = user.todos[0:5]
+        return render_template('home.html', user=user, todos=user_todos_top_5)
     else:
         return '401'
 
@@ -52,14 +53,17 @@ def home():
 def todos(editmode=False, item=None):
     if 'user_id' in session.keys():
         user = User.query.filter_by(id=session['user_id']).first()
+        
         if request.method == 'POST':
             title, desc = request.form.values()
             new_todo = Todos(title=title, description=desc, owner=user)
             db.session.add(new_todo)
             db.session.commit()
+
         if editmode is False:
             session.pop('title', None)
             session.pop('desc', None)
+
         return render_template('todos.html', data=user.todos, editmode=editmode, item=item)
     else:
         return '401'
@@ -129,7 +133,32 @@ def update(item):
 
 @app.route('/lists', methods=['GET', 'POST'])
 def lists():
-    return render_template('home.html')
+    if 'user_id' in session.keys():
+        user = User.query.filter_by(id=session['user_id']).first()
+        if request.method == 'POST':
+            title = request.form['title']
+            new_list = List(owner=user, title=title)
+            db.session.add(new_list)
+            db.session.commit()
+        return render_template('list.html', lists=user.lists)
+        
+    else:
+        return '401'
+
+
+@app.route('/view/<items_list>', methods=['GET', 'POST'])
+def list_view(items_list):
+    if 'user_id' in session.keys() and items_list is not None:
+        user = User.query.filter_by(id=session['user_id']).first()
+        il = List.query.filter_by(id=items_list).first()
+        if request.method == 'POST':
+            new_item = ListItem(owner_id=il.id, name=request.form['list_item'])
+            db.session.add(new_item)
+            db.session.commit()
+        
+        return render_template('list_view.html', list=il)
+    else:
+        return '401'
 
 
 @app.route('/logout')
