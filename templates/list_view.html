@@ -4,6 +4,7 @@
 <div class="my-4 p-3 rounded bg-light shadow-sm">
     <h1 class="border-bottom border-gray pb-2">{{list.title}}</h1>
     <h6 class="border-bottom border-gray pb-3 my-3">Add Item</h6>
+
     <form method="post" class="d-flex" action={{url_for('list_view', items_list=list.id)}}>
         <div class="form-group w-100 pt-3">
             <input type="text" name="list_item" class="form-control" required>
@@ -12,7 +13,7 @@
     </form>
     <div class="d-flex flex-row">
         <a class="btn mr-3 btn-secondary">Edit List Title</a>
-        <a class="btn mr-3 btn-danger">Delete List</a>
+        <a class="btn mr-3 btn-danger" href={{url_for('handle_crud_list', item=list.id, func='full-del')}}>Delete List</a>
     </div>
 </div>
 
@@ -23,9 +24,8 @@
         <div class="media text-muted pt-3">
             <div class="media-body pb-3 mb-0 small lh-125 border-bottom border-gray">
                 <h5 class="d-block text-gray-dark">{{item.name}}</h5>
-                <!-- <a class="btn btn-secondary btn-sm" href={{url_for('handle_crud', func='edit', item=item.id )}}>
-                    Edit
-                </a> -->
+                <a class="btn btn-secondary btn-sm" href={{url_for('handle_crud_list', func='edit-item', item=item.id )}}>Edit</a>
+                <a class="btn btn-danger btn-sm" href={{url_for('handle_crud_list', func='item-del', item=item.id )}}>Delete Item</a>
             </div>
         </div>
     {% endfor %}

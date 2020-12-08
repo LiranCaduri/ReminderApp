@@ -43,7 +43,8 @@ def home():
     if 'user_id' in session.keys():
         user = User.query.filter_by(id=session['user_id']).first()
         user_todos_top_5 = user.todos[0:5]
-        return render_template('home.html', user=user, todos=user_todos_top_5)
+        user_lists_top_5 = user.lists[0:5]
+        return render_template('home.html', user=user, todos=user_todos_top_5, lists=user_lists_top_5)
     else:
         return '401'
 
@@ -115,7 +116,6 @@ def check(item):
 
 @app.route('/edit/<item>', methods=['POST'])
 def update(item):
-    # mark - make it work
     if request.method == 'POST':
         todo = Todos.query.filter_by(id=item).first()
         todo.title = request.form['title']
@@ -155,12 +155,13 @@ def list_view(items_list):
             new_item = ListItem(owner_id=il.id, name=request.form['list_item'])
             db.session.add(new_item)
             db.session.commit()
+        session['current_list'] = il.id
         
         return render_template('list_view.html', list=il)
     else:
         return '401'
 
-@app.route('/handle-list/<item><func>')
+@app.route('/handle-list/<item>/<func>')
 def handle_crud_list(item, func):
     actions = {
         'full-del': list_delete,
@@ -174,23 +175,23 @@ def handle_crud_list(item, func):
         if func in actions.keys():
             resp = actions[func](item, func)
 
-    page_direct = 'list_view' if func == 'item-del' or func == 'edit_item' else 'lists'
+    page_direct = url_for('list_view', items_list=session['current_list']) if func == 'item-del' or func == 'edit_item' else url_for('lists')
 
     if resp:
-        return redirect(url_for(page_direct))
+        return redirect(page_direct)
     elif not resp:
         flash("Could'nt deploy the action")
-        return redirect(url_for(page_direct))
+        return redirect(page_direct)
     else:
         flash('Oops, something went wrong..')
-        return redirect(url_for(page_direct))
+        return redirect(url_for('logout'))
 
 
 def list_delete(item, func):
     if func == 'full-del':
         list_items = ListItem.query.filter_by(owner_id=item).all()
         for list_item in list_items:
-            list_item.delete()
+            db.session.delete(list_item)
         
         user = User.query.filter_by(id=session['user_id']).first()
         for list in user.lists:
@@ -200,29 +201,51 @@ def list_delete(item, func):
 
         list = List.query.filter_by(id=item).delete()
         db.session.commit()
-
         return True
+
     elif func == 'item-del':
-        pass
+        list_id = session['current_list']
+        list = List.query.filter_by(id=list_id).first()
+        for li in list.items:
+            if li.id == int(item):
+                list.items.remove(li)
+                break
+
+        ListItem.query.filter_by(id=item).delete()
+        db.session.commit()
+        return True
     else:
         return False
 
 
-
+# @app.route('/item-update/edit-item', methods=['POST'])
 def list_update(item, func):
-    if func == 'edit-item':
-        pass
-    elif func == 'edit-title':
-        pass
+    if 'user_id' in session.keys():
+        if func == 'edit-item':
+            if request.method == 'POST':
+                li = ListItem.query.filter_by(id=item).first()
+                li.name = request.form['list_item']
+                db.session.commit()
+                session.pop('item_name', None)
+                session.pop('item-editmode', None)
+                session.pop('item-editmode', None)
+                return redirect(url_for('list_view'))
+            else:
+                li = ListItem.query.filter_by(id=item).first()
+                session['item_name'] = li.name
+                session['item-editmode'] = True
+                session['item-id'] = li.id
+            return True
+        elif func == 'edit-title':
+            pass
     else:
         return False
-
-    return True
 
 
 @app.route('/logout')
 def logout():
     session.pop('user_id', None)
+    session.pop('current_list', None)
     flash('You were logged out')
     return redirect(url_for('index', reg=False))
 
