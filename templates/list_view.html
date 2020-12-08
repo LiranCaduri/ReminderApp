@@ -10,6 +10,10 @@
         </div>
         <button type="submit" class="mx-3 my-3 btn btn-success form-group">Create</button>
     </form>
+    <div class="d-flex flex-row">
+        <a class="btn mr-3 btn-secondary">Edit List Title</a>
+        <a class="btn mr-3 btn-danger">Delete List</a>
+    </div>
 </div>
 
 <div class="my-3 p-3 rounded bg-light shadow-sm">
@@ -18,7 +22,10 @@
     {% for item in list.items %}
         <div class="media text-muted pt-3">
             <div class="media-body pb-3 mb-0 small lh-125 border-bottom border-gray">
-                <strong class="d-block text-gray-dark">{{item.name}}</strong>
+                <h5 class="d-block text-gray-dark">{{item.name}}</h5>
+                <!-- <a class="btn btn-secondary btn-sm" href={{url_for('handle_crud', func='edit', item=item.id )}}>
+                    Edit
+                </a> -->
             </div>
         </div>
     {% endfor %}

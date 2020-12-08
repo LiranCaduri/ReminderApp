@@ -160,6 +160,65 @@ def list_view(items_list):
     else:
         return '401'
 
+@app.route('/handle-list/<item><func>')
+def handle_crud_list(item, func):
+    actions = {
+        'full-del': list_delete,
+        'item-del': list_delete,
+        'edit-title': list_update,
+        'edit-item': list_update,
+    }
+
+    resp = None
+    if 'user_id' in session.keys():
+        if func in actions.keys():
+            resp = actions[func](item, func)
+
+    page_direct = 'list_view' if func == 'item-del' or func == 'edit_item' else 'lists'
+
+    if resp:
+        return redirect(url_for(page_direct))
+    elif not resp:
+        flash("Could'nt deploy the action")
+        return redirect(url_for(page_direct))
+    else:
+        flash('Oops, something went wrong..')
+        return redirect(url_for(page_direct))
+
+
+def list_delete(item, func):
+    if func == 'full-del':
+        list_items = ListItem.query.filter_by(owner_id=item).all()
+        for list_item in list_items:
+            list_item.delete()
+        
+        user = User.query.filter_by(id=session['user_id']).first()
+        for list in user.lists:
+            if list.id == int(item):
+                user.lists.remove(list)
+                break
+
+        list = List.query.filter_by(id=item).delete()
+        db.session.commit()
+
+        return True
+    elif func == 'item-del':
+        pass
+    else:
+        return False
+
+
+
+def list_update(item, func):
+    if func == 'edit-item':
+        pass
+    elif func == 'edit-title':
+        pass
+    else:
+        return False
+
+    return True
+
 
 @app.route('/logout')
 def logout():

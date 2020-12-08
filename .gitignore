@@ -1,2 +1,3 @@
 .vscode
 ReminderAppDataBase.sqlite3
+__pycache__
