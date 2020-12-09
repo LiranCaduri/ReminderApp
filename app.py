@@ -1,11 +1,13 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, session
 from models import *
 from sqlalchemy.exc import OperationalError
+from datetime import timedelta
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///ReminderAppDataBase.sqlite3'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.secret_key = 'liran_is_the_boss'
+app.permanent_session_lifetime = timedelta(minutes=2)
 db.init_app(app=app)
 
 
@@ -175,7 +177,7 @@ def handle_crud_list(item, func):
         if func in actions.keys():
             resp = actions[func](item, func)
 
-    page_direct = url_for('list_view', items_list=session['current_list']) if func == 'item-del' or func == 'edit_item' else url_for('lists')
+    page_direct = url_for('list_view', items_list=session['current_list']) if func == 'item-del' or func == 'edit-item' else url_for('lists')
 
     if resp:
         return redirect(page_direct)
@@ -218,26 +220,25 @@ def list_delete(item, func):
         return False
 
 
-# @app.route('/item-update/edit-item', methods=['POST'])
-def list_update(item, func):
-    if 'user_id' in session.keys():
-        if func == 'edit-item':
-            if request.method == 'POST':
-                li = ListItem.query.filter_by(id=item).first()
-                li.name = request.form['list_item']
-                db.session.commit()
-                session.pop('item_name', None)
-                session.pop('item-editmode', None)
-                session.pop('item-editmode', None)
-                return redirect(url_for('list_view'))
-            else:
-                li = ListItem.query.filter_by(id=item).first()
-                session['item_name'] = li.name
-                session['item-editmode'] = True
-                session['item-id'] = li.id
-            return True
-        elif func == 'edit-title':
-            pass
+@app.route('/list-update/<item>', methods=['POST'])
+def list_update(item, func=None):
+    if func == 'edit-item':
+        if request.method == 'POST':
+            li = ListItem.query.filter_by(id=item).first()
+            li.name = request.form['list_item']
+            db.session.commit()
+            session.pop('item_name', None)
+            session.pop('item-editmode', None)
+            session.pop('item-editmode', None)
+            return redirect(url_for('list_view', items_list=session['current_list']))
+        else:
+            li = ListItem.query.filter_by(id=item).first()
+            session['item_name'] = li.name
+            session['item-editmode'] = True
+            session['item-id'] = li.id
+        return True
+    elif func == 'edit-title':
+        pass
     else:
         return False
 
