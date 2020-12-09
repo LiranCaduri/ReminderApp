@@ -1,6 +1,0 @@
-{% if session['item-editmode'] %}
-<p>{{session['item-editmode']}}</p>
-<h6 class="border-bottom border-gray pb-3 my-3">Edit Item</h6>
-<form method="post" class="d-flex" action={{url_for('list_view', items_list=list.id)}}>
-    {% else %}
-            {% endif  %}
