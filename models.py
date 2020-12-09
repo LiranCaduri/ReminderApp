@@ -35,6 +35,5 @@ class List(db.Model):
 
 class ListItem(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    owner_id = db.Column(db.Integer, db.ForeignKey('list.id', ondelete='CASCADE'))
     name = db.Column(db.String(80), nullable=False)
-    # quantity = db.Column(db.Integer, nullable=True)
+    owner_id = db.Column(db.Integer, db.ForeignKey('list.id', ondelete='CASCADE'))

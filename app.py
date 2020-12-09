@@ -7,7 +7,6 @@ app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///ReminderAppDataBase.sqlite3'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.secret_key = 'liran_is_the_boss'
-app.permanent_session_lifetime = timedelta(minutes=2)
 db.init_app(app=app)
 
 
@@ -150,6 +149,7 @@ def lists():
 
 @app.route('/view/<items_list>', methods=['GET', 'POST'])
 def list_view(items_list):
+    print(request.referrer)
     if 'user_id' in session.keys() and items_list is not None:
         user = User.query.filter_by(id=session['user_id']).first()
         il = List.query.filter_by(id=items_list).first()
@@ -220,33 +220,41 @@ def list_delete(item, func):
         return False
 
 
-@app.route('/list-update/<item>', methods=['POST'])
+@app.route('/list-update/<item>/<func>', methods=['GET','POST'])
 def list_update(item, func=None):
     if func == 'edit-item':
         if request.method == 'POST':
             li = ListItem.query.filter_by(id=item).first()
-            li.name = request.form['list_item']
+            li.name = request.form['list_item']        
             db.session.commit()
+            
+            session['item-editmode'] = False
             session.pop('item_name', None)
-            session.pop('item-editmode', None)
-            session.pop('item-editmode', None)
+            session.pop('item_id', None)
+            session.pop('item_editmode', None)
             return redirect(url_for('list_view', items_list=session['current_list']))
         else:
             li = ListItem.query.filter_by(id=item).first()
             session['item_name'] = li.name
-            session['item-editmode'] = True
-            session['item-id'] = li.id
+            session['item_editmode'] = True
+            session['item_id'] = li.id
         return True
     elif func == 'edit-title':
         pass
     else:
-        return False
+        session.pop('item_name', None)
+        session.pop('item_id', None)
+        session.pop('item_editmode', None)
+        return redirect(url_for('list_view', items_list=session['current_list']))
 
 
 @app.route('/logout')
 def logout():
     session.pop('user_id', None)
     session.pop('current_list', None)
+    session.pop('item_name', None)
+    session.pop('item_id', None)
+    session.pop('item_editmode', None)
     flash('You were logged out')
     return redirect(url_for('index', reg=False))
 
