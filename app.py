@@ -150,16 +150,15 @@ def lists():
 
 @app.route('/view/<items_list>', methods=['GET', 'POST'])
 def list_view(items_list):
-    print('list_editmode' in session)
-    print(request.referrer)
     if 'user_id' in session.keys() and items_list is not None:
-        user = User.query.filter_by(id=session['user_id']).first()
         il = List.query.filter_by(id=items_list).first()
         if request.method == 'POST':
             new_item = ListItem(owner_id=il.id, name=request.form['list_item'])
             db.session.add(new_item)
             db.session.commit()
         session['current_list'] = il.id
+        if 'view' not in request.referrer.split('/'):
+            drop_update_session()
         
         return render_template('list_view.html', list=il)
     else:
@@ -231,9 +230,7 @@ def list_update(item, func=None):
             li.name = request.form['list_item']        
             db.session.commit()
             
-            session.pop('item_name', None)
-            session.pop('item_id', None)
-            session.pop('item_editmode', None)
+            drop_update_session()
             return redirect(url_for('list_view', items_list=session['current_list']))
         else:
             li = ListItem.query.filter_by(id=item).first()
@@ -247,8 +244,7 @@ def list_update(item, func=None):
             li.title = request.form['title']
             db.session.commit()
             
-            session.pop('list_title', None)
-            session.pop('list_editmode', None)
+            drop_update_session()
             return redirect(url_for('list_view', items_list=session['current_list']))
         else:
             li = List.query.filter_by(id=session['current_list']).first()
@@ -257,12 +253,16 @@ def list_update(item, func=None):
 
         return True
     else:
-        session.pop('item_name', None)
-        session.pop('item_id', None)
-        session.pop('item_editmode', None)
-        session.pop('list_title', None)
-        session.pop('list_editmode', None)
+        drop_update_session()
         return redirect(url_for('list_view', items_list=session['current_list']))
+
+
+def drop_update_session():
+    session.pop('item_name', None)
+    session.pop('item_id', None)
+    session.pop('item_editmode', None)
+    session.pop('list_title', None)
+    session.pop('list_editmode', None)
 
 
 @app.route('/logout')
