@@ -2,7 +2,7 @@
 
 {% block below %}
 <div class="my-4 p-3 rounded bg-light shadow-sm">
-    {% if session['item_editmode'] %}
+    {% if session['item_editmode'] is not none and session['item_editmode'] %}
     <h1 class="border-bottom border-gray pb-2">{{list.title}}</h1>
     <h6 class="border-bottom border-gray pb-3 my-3">Edit Item</h6>
     <form method="post" class="d-flex" action={{url_for('list_update', item=session['item_id'], func='edit-item')}}>
@@ -12,6 +12,18 @@
         <button type="submit" class="mx-3 my-3 btn btn-success form-group">Update</button>
         <a class="btn btn-danger my-3 form-group" href={{url_for('list_update', item=list.id, func='editmode-off')}}>Cancel</a>
     </form>
+    {% elif session['list_editmode'] %}
+    <h6 class="border-bottom border-gray pb-3 my-3">Change Title</h6>
+    <form method="post" class="d-flex" action={{url_for('list_update', item=list.id, func='edit-title')}}>
+        <div class="form-group w-100 pt-3">
+            <h1>{{session['list_title'], list.title}}</h1>
+            <input type="text" name="title" value='{{ list.title }}' class="form-control" required>
+        </div>
+        <button type="submit" class="mx-3 my-3 btn btn-success form-group">Change</button>
+        <a class="btn btn-danger my-3 form-group" href={{url_for('list_update', item=list.id, func='editmode-off')}}>Cancel</a>
+    </form>
+
+
     {% else %}
     <h1 class="border-bottom border-gray pb-2">{{list.title}}</h1>
     <h6 class="border-bottom border-gray pb-3 my-3">Add Item</h6>
@@ -22,7 +34,7 @@
         <button type="submit" class="mx-3 my-3 btn btn-success form-group">Create</button>
     </form>
     <div class="d-flex flex-row">
-        <a class="btn mr-3 btn-secondary">Edit List Title</a>
+        <a class="btn mr-3 btn-secondary" href={{url_for('handle_crud_list', item=list.id, func='edit-title')}}>Edit List Title</a>
         <a class="btn mr-3 btn-danger" href={{url_for('handle_crud_list', item=list.id, func='full-del')}}>Delete List</a>
     </div>
     {% endif %}
@@ -35,9 +47,8 @@
     <div class="media text-muted pt-3">
         <div class="media-body pb-3 mb-0 small lh-125 border-bottom border-gray">
             <h5 class="d-block text-gray-dark">{{item.name}}</h5>
-            {% if not session['item_editmode'] %}
-            <a class="btn btn-secondary btn-sm"
-                href={{url_for('handle_crud_list', func='edit-item', item=item.id )}}>Edit</a>
+            {% if not session['item_editmode'] and not session['list_editmode'] %}
+            <a class="btn btn-secondary btn-sm" href={{url_for('handle_crud_list', func='edit-item', item=item.id )}}>Edit</a>
             <a class="btn btn-danger btn-sm" href={{url_for('handle_crud_list', func='item-del', item=item.id )}}>Delete Item</a>
             {% endif %}
         </div>

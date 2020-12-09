@@ -1,7 +1,7 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, session
 from models import *
 from sqlalchemy.exc import OperationalError
-from datetime import timedelta
+
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///ReminderAppDataBase.sqlite3'
@@ -69,6 +69,7 @@ def todos(editmode=False, item=None):
         return render_template('todos.html', data=user.todos, editmode=editmode, item=item)
     else:
         return '401'
+
 
 @app.route('/handle/<item>/<func>')
 def handle_crud(item, func):
@@ -149,6 +150,7 @@ def lists():
 
 @app.route('/view/<items_list>', methods=['GET', 'POST'])
 def list_view(items_list):
+    print('list_editmode' in session)
     print(request.referrer)
     if 'user_id' in session.keys() and items_list is not None:
         user = User.query.filter_by(id=session['user_id']).first()
@@ -162,6 +164,7 @@ def list_view(items_list):
         return render_template('list_view.html', list=il)
     else:
         return '401'
+
 
 @app.route('/handle-list/<item>/<func>')
 def handle_crud_list(item, func):
@@ -177,7 +180,7 @@ def handle_crud_list(item, func):
         if func in actions.keys():
             resp = actions[func](item, func)
 
-    page_direct = url_for('list_view', items_list=session['current_list']) if func == 'item-del' or func == 'edit-item' else url_for('lists')
+    page_direct = url_for('list_view', items_list=session['current_list']) if func == 'item-del' or func == 'edit-item' or func == 'edit-title' else url_for('lists')
 
     if resp:
         return redirect(page_direct)
@@ -228,7 +231,6 @@ def list_update(item, func=None):
             li.name = request.form['list_item']        
             db.session.commit()
             
-            session['item-editmode'] = False
             session.pop('item_name', None)
             session.pop('item_id', None)
             session.pop('item_editmode', None)
@@ -240,11 +242,26 @@ def list_update(item, func=None):
             session['item_id'] = li.id
         return True
     elif func == 'edit-title':
-        pass
+        if request.method == 'POST':
+            li = List.query.filter_by(id=session['current_list']).first()
+            li.title = request.form['title']
+            db.session.commit()
+            
+            session.pop('list_title', None)
+            session.pop('list_editmode', None)
+            return redirect(url_for('list_view', items_list=session['current_list']))
+        else:
+            li = List.query.filter_by(id=session['current_list']).first()
+            session['list_title'] = li.title
+            session['list_editmode'] = True
+
+        return True
     else:
         session.pop('item_name', None)
         session.pop('item_id', None)
         session.pop('item_editmode', None)
+        session.pop('list_title', None)
+        session.pop('list_editmode', None)
         return redirect(url_for('list_view', items_list=session['current_list']))
 
 
@@ -255,6 +272,8 @@ def logout():
     session.pop('item_name', None)
     session.pop('item_id', None)
     session.pop('item_editmode', None)
+    session.pop('list_title', None)
+    session.pop('list_editmode', None)
     flash('You were logged out')
     return redirect(url_for('index', reg=False))
 
